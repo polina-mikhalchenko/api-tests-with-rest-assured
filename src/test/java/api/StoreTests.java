@@ -1,13 +1,14 @@
 package api;
 
 import interfaces.IStore;
+import io.qameta.allure.Description;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
-import jdk.jfr.Description;
 import jsonBody.OrderBody;
 import model.Order;
 import net.jqwik.api.Example;
 import org.json.JSONObject;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,6 +28,7 @@ public class StoreTests extends BaseTest implements IStore {
     @ParameterizedTest
     @MethodSource("data.DataForOrders#createOrder")
     @Description("Добавить заказ")
+    @DisplayName("POST запрос для добавления заказа")
     public void placeAnOrderForAPet(Order order) {
         OrderBody orderBody = new OrderBody(order.getId(), order.getPetId(), order.getQuantity(),
                 order.getShipDate(), getOrderStatus(), order.getComplete());
@@ -39,6 +41,7 @@ public class StoreTests extends BaseTest implements IStore {
     }
     @Test
     @Description("Проверка статус-кода 400 Bad Request в POST запросе на добавление заказа без RequestBody")
+    @DisplayName("POST запрос для добавления заказа: 400 Bad Request")
     public void badPlaceAnOrderForAPet() {
         JSONObject body = new JSONObject();
         body.put("id", 494940399);
@@ -48,14 +51,21 @@ public class StoreTests extends BaseTest implements IStore {
     }
     @Test
     @Description("Получить заказ по id")
+    @DisplayName("GET запрос на получение заказа по id")
     public void findPurchaseOrderByID() {
-        int orderId = getRandomNumber();
+        int orderId = 938;
+        JSONObject body = new JSONObject();
+        body.put("id", orderId);
+        Response resp = RestAssured.given(requestSpec).
+                body(body.toString()).
+                post("/store/order");
         Response response = RestAssured.given(requestSpec).
                 get("/store/order/" + orderId);
         response.then().spec(responseSpec(200));
     }
     @Test
     @Description("Проверка ошибки 404 в запросе на получение заказа по id с отрицательным значением")
+    @DisplayName("GET запрос на получение заказа по id: 404 Not Found")
     public void notFoundPurchaseOrderByID() {
         int orderId = -12;
         Response response = RestAssured.given(requestSpec).
@@ -64,9 +74,9 @@ public class StoreTests extends BaseTest implements IStore {
     }
     @Test
     @Description("Удалить заказ по id")
+    @DisplayName("DELETE запрос на удаление заказа по id")
     public void deletePurchaseOrderByID() {
         int orderId = 79;
-        //create an order
         JSONObject body = new JSONObject();
         body.put("id", orderId);
         Response resp = RestAssured.given(requestSpec).
@@ -79,6 +89,7 @@ public class StoreTests extends BaseTest implements IStore {
     }
     @Test
     @Description("Проверка ошибки 404 в запросе на удаление заказа по несуществующему id")
+    @DisplayName("DELETE запрос на удаление заказа по id: 404 Not Found")
     public void notFoundDeletePurchaseOrderByID() {
         int orderId = 976543;
         Response response = RestAssured.given(requestSpec).
@@ -87,6 +98,7 @@ public class StoreTests extends BaseTest implements IStore {
     }
     @Test
     @Description("Получить количество питомцев по статусу")
+    @DisplayName("GET запрос на получение количества питомцев по статусу")
     public void returnsPetInventoriesByStatus() {
         Response response = RestAssured.given(requestSpec).
                 get("/store/inventory");

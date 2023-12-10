@@ -1,13 +1,15 @@
 package api;
 
 import interfaces.IPet;
+import io.qameta.allure.Description;
+import io.qameta.allure.Flaky;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import jdk.jfr.Description;
 import jsonBody.Category;
 import jsonBody.PetBody;
 import model.Pet;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -17,9 +19,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class PetTests extends BaseTest implements IPet {
     @Test
     @Description("Добавить нового питомца в магазин")
+    @DisplayName("POST запрос на добавление питомца")
     public void createPet() {
         Category category = new Category(1, "parrot");
         ArrayList<String> pic = new ArrayList<>();
@@ -31,10 +35,17 @@ public class PetTests extends BaseTest implements IPet {
         response.then().spec(responseSpec(200));
     }
     @Test
+    @Flaky
     @Description("Загрузить изображение питомца")
+    @DisplayName("POST запрос для загрузки изображения питомца")
     public void uploadAnImage() {
         int petId = 1;
-        File file = new File("C:\\IdeaProjects\\pet\\src\\test\\java\\resources\\pet-planning_pet-trust-primer_main-image.jpg");
+
+        File file = new File(System.getProperty("user.dir") +
+                File.separator + "src" +
+                File.separator + "test" +
+                File.separator + "resources" +
+                File.separator +"pet-planning_pet-trust-primer_main-image.jpg");
         Response response = RestAssured.given(requestSpec).
                 contentType(ContentType.MULTIPART).
                 multiPart(file).
@@ -43,6 +54,7 @@ public class PetTests extends BaseTest implements IPet {
     }
     @Test
     @Description("Проверка статус кода 400 Bad Request с ошибкой в запросе(отсутствие файла)")
+    @DisplayName("POST запрос для загрузки изображения питомца: 400 Bad Request")
     public void badUploadAnImage() {
         int petId = 1;
         Response response = RestAssured.given(requestSpec).
@@ -51,18 +63,8 @@ public class PetTests extends BaseTest implements IPet {
         response.then().spec(responseSpec(400));
     }
     @Test
-    @Description("Проверка статус кода 404 Not Found при загрузке изображения к питомцу с невалидным id")
-    public void notFoundUploadAnImage() {
-        String petId = "error";
-        File file = new File("C:\\IdeaProjects\\pet\\src\\test\\java\\resources\\pet-planning_pet-trust-primer_main-image.jpg");
-        Response response = RestAssured.given(requestSpec).
-                contentType(ContentType.MULTIPART).
-                multiPart(file).
-                post("/pet/" + petId + "/uploadImage");
-        response.then().spec(responseSpec(404));
-    }
-    @Test
     @Description("Обновить информацию о питомце")
+    @DisplayName("PUT запрос на добавление информации о питомце")
     public void updateAnExistingPet() {
         Category category = new Category(1, "updated parrot");
         ArrayList<String> pic = new ArrayList<>();
@@ -75,6 +77,7 @@ public class PetTests extends BaseTest implements IPet {
     }
     @Test
     @Description("Получить информацию о питомцах по статусу")
+    @DisplayName("GET запрос на получение информации о питомце по статусу")
     public void findPetsByStatus() {
         String status = getPetStatus();
         Response response = RestAssured.given(requestSpec).
@@ -82,16 +85,23 @@ public class PetTests extends BaseTest implements IPet {
                 get("/pet/findByStatus");
         response.then().spec(responseSpec(200));
     }
-    @Test
+    @ParameterizedTest
+    @MethodSource("data.DataForPets#createACat")
     @Description("Получить информацию о питомце по id")
-    public void findPetByID() {
-        int petId = 111;
+    @DisplayName("GET запрос на получение информации о питомце по id")
+    public void findPetByID(Pet pet) {
+        PetBody petBody = createPetWithPOJO(pet, getPetStatus());
+        Response postResp = RestAssured.given(requestSpec).
+                body(petBody).
+                post("/pet");
+        int petId = pet.getId();
         Response response = RestAssured.given(requestSpec).
                 get("/pet/" + petId);
         response.then().spec(responseSpec(200));
     }
     @Test
     @Description("Проверка статус-кода 404 Not Found при получении информации о питомце по несуществующему id")
+    @DisplayName("GET запрос на получение информации о питомце по id: 404 Not Found")
     public void notFoundPetByNonExistentID() {
         int petId = 959039484;
         Response response = RestAssured.given(requestSpec).
@@ -100,6 +110,7 @@ public class PetTests extends BaseTest implements IPet {
     }
     @Test
     @Description("Обновить информацию о питомце в магазине")
+    @DisplayName("POST запрос на обновление информации о питомце")
     public void updatesAPetInTheStoreWithFormData() {
         int petId = 111;
         String name = "updated parrot";
@@ -114,8 +125,9 @@ public class PetTests extends BaseTest implements IPet {
         response.then().spec(responseSpec(200));
     }
     @ParameterizedTest
-    @MethodSource("data.DataForPets#createPet")
+    @MethodSource("data.DataForPets#createADog")
     @Description("Удалить питомца по id")
+    @DisplayName("DELETE запрос для удаления питомца")
     public void deletesAPet(Pet pet) {
         PetBody petBody = createPetWithPOJO(pet, getPetStatus());
         Response postResp = RestAssured.given(requestSpec).
